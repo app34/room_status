@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Viewport adjusted for iOS safe areas & prevent auto-zoom on inputs -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Room Status</title>
+  
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b0f19" />
+
+  <!-- iOS Specific Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Room Status" />
+  
+  <!-- iOS Home Screen Icons -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-192.png" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(21, 29, 46, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --input-bg: rgba(13, 19, 32, 0.9);
+      
+      --text-main: #f8fafc;
+      --text-muted: #64748b;
+      --text-sub: #94a3b8;
+      
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.35);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.25);
+      --warning: #f59e0b;
+      --warning-glow: rgba(245, 158, 11, 0.25);
+      --danger: #ef4444;
+      
+      --radius-lg: 20px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+      -webkit-touch-callout: none;
+    }
+    
+    body { 
+      background: radial-gradient(circle at top, #1e293b, var(--bg) 70%);
+      color: var(--text-main); 
+      /* iOS safe area inset support */
+      padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(90px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+      min-height: 100vh;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .app-container { max-width: 1000px; margin: 0 auto; }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #fff; box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .date-badge { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); background: rgba(255, 255, 255, 0.05); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--card-border); }
+
+    /* Action Bar */
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+
+    .btn {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+      -webkit-appearance: none;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), #2563eb); border: none; color: #fff; box-shadow: 0 4px 14px var(--primary-glow); }
+    .btn-icon { padding: 10px; border-radius: 50%; width: 38px; height: 38px; justify-content: center; }
+    .btn-danger-outline { border-color: rgba(239, 68, 68, 0.3); color: #f87171; background: rgba(239, 68, 68, 0.05); }
+
+    /* Empty Grid Container State */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px 20px;
+      background: var(--card-bg);
+      border: 1px dashed var(--card-border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .empty-state p { color: var(--text-sub); font-size: 0.9rem; font-weight: 600; }
+
+    /* Room Dashboard Grid */
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+    }
+
+    .room-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .room-card:active { transform: scale(0.98); }
+    .room-card.status-active { border-color: rgba(59, 130, 246, 0.6); background: linear-gradient(145deg, rgba(30, 58, 138, 0.35), var(--card-bg)); box-shadow: 0 0 18px var(--primary-glow); }
+    .room-card.status-done { border-color: rgba(16, 185, 129, 0.6); background: linear-gradient(145deg, rgba(6, 78, 59, 0.35), var(--card-bg)); box-shadow: 0 0 18px var(--success-glow); }
+    .room-card.status-flagged { border-color: rgba(245, 158, 11, 0.6); background: linear-gradient(145deg, rgba(120, 53, 15, 0.35), var(--card-bg)); box-shadow: 0 0 18px var(--warning-glow); }
+
+    .room-header { display: flex; justify-content: space-between; align-items: center; }
+    .room-num { font-size: 1.1rem; font-weight: 800; color: #fff; }
+
+    .badge {
+      font-size: 0.62rem; padding: 3px 7px; border-radius: 10px;
+      text-transform: uppercase; font-weight: 800; letter-spacing: 0.04em;
+      background: rgba(255, 255, 255, 0.06); color: var(--text-muted); border: 1px solid var(--card-border);
+    }
+    .badge-done { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: rgba(16, 185, 129, 0.4); }
+    .badge-in { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.4); }
+    .badge-flag { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); }
+
+    .time-info { 
+      font-size: 0.75rem; color: var(--text-sub); display: flex; flex-direction: column; gap: 3px; 
+      background: rgba(0,0,0,0.25); padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.03);
+    }
+    .time-info span { display: flex; justify-content: space-between; }
+    .time-info span strong { color: var(--text-main); font-weight: 700; }
+
+    .note-preview { 
+      font-size: 0.7rem; color: #fbbf24; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+      background: rgba(245, 158, 11, 0.12); padding: 4px 8px; border-radius: 6px;
+    }
+
+    /* Floating Action Menu (FAB) with iOS inset positioning */
+    .fab-container { 
+      position: fixed; 
+      bottom: calc(20px + env(safe-area-inset-bottom)); 
+      right: calc(20px + env(safe-area-inset-right)); 
+      z-index: 90; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: flex-end; 
+      gap: 10px; 
+    }
+    .fab-main {
+      width: 58px; height: 58px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), #1d4ed8);
+      color: #fff; border: none; font-size: 1.4rem;
+      box-shadow: 0 10px 25px var(--primary-glow); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: var(--transition);
+      -webkit-appearance: none;
+    }
+    .fab-menu { display: none; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .fab-container.active .fab-menu { display: flex; }
+    
+    .fab-item {
+      background: #1e293b; color: #fff; border: 1px solid var(--card-border);
+      padding: 10px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;
+    }
+    .fab-item.whatsapp { background: #25D366; color: #000; font-weight: 800; }
+
+    /* Modals & iOS Dynamic Bottom Sheet */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(3, 7, 18, 0.8);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: none; justify-content: center; align-items: flex-end; z-index: 100;
+    }
+    @media (min-width: 600px) { .modal-overlay { align-items: center; } }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #111827; border: 1px solid var(--card-border);
+      border-radius: 24px 24px 0 0; width: 100%; max-width: 560px; 
+      padding: 20px 20px calc(28px + env(safe-area-inset-bottom)) 20px;
+      display: flex; flex-direction: column; gap: 16px; max-height: 88vh; overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.6); animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (min-width: 600px) { .modal { border-radius: 24px; padding-bottom: 28px; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .sheet-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 auto 4px auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .close-btn { 
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--card-border); 
+      color: var(--text-sub); width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700;
+    }
+
+    .field-group { display: flex; flex-direction: column; gap: 8px; }
+    .field-group label { font-size: 0.72rem; color: var(--text-sub); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+    
+    .input-row { display: flex; gap: 6px; align-items: center; }
+
+    .btn-clear-input {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171; width: 42px; height: 42px; border-radius: var(--radius-md);
+      font-size: 0.9rem; font-weight: 800; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0; transition: var(--transition);
+      -webkit-appearance: none;
+    }
+
+    /* Prevent auto-zoom on iOS Safari by using minimum font-size 16px on inputs */
+    input[type="time"], input[type="text"], input[type="date"], select {
+      background: var(--input-bg); border: 1.5px solid var(--card-border);
+      color: var(--text-main); padding: 10px 12px; border-radius: var(--radius-md);
+      font-size: 16px; font-weight: 600; width: 100%; outline: none; transition: var(--transition);
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      background: rgba(255, 255, 255, 0.05); border: 1.5px solid var(--card-border);
+      padding: 8px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+      cursor: pointer; color: var(--text-sub); transition: var(--transition); user-select: none;
+    }
+    .chip.selected { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px var(--primary-glow); }
+
+    .quick-time-btns { display: flex; gap: 6px; }
+    .btn-time-adjust {
+      background: rgba(255, 255, 255, 0.06); border: 1px solid var(--card-border);
+      color: var(--text-main); font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+      -webkit-appearance: none;
+    }
+
+    .manage-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+    .manage-item {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.03); padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--card-border);
+    }
+
+    .history-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;
+    }
+    .stat-box {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border);
+      border-radius: var(--radius-md); padding: 10px; text-align: center;
+    }
+    .stat-val { font-size: 1.2rem; font-weight: 800; color: #fff; }
+    .stat-lbl { font-size: 0.65rem; color: var(--text-sub); text-transform: uppercase; font-weight: 700; }
+
+    .history-filters {
+      display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.2);
+      padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--card-border);
+    }
+
+    .history-card-item {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--card-border);
+      border-radius: var(--radius-md); padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .history-card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .history-card-body {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;
+      padding-top: 10px; border-top: 1px dashed var(--card-border);
+    }
+
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 4px; }
+    .history-table th, .history-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--card-border); }
+    .history-table th { color: var(--text-sub); font-size: 0.7rem; text-transform: uppercase; }
+
+    .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+
+    @media print {
+      body { background: white; color: black; padding: 0; }
+      .toolbar, .btn, header, .fab-container { display: none !important; }
+      .room-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .room-card { border: 1px solid #000; background: #fff !important; color: #000; box-shadow: none; }
+      .time-info { background: #f1f5f9; }
+      .time-info span strong { color: #000; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">R</div>
+        <h1>Room Status</h1>
+      </div>
+      <div class="header-right">
+        <div class="date-badge" id="currentDate"></div>
+        <button class="btn btn-icon" onclick="openSettingsModal()" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="openHistoryModal()">📜 History Page</button>
+      <button class="btn btn-danger-outline" onclick="finishAndArchiveDay()">Finish & Archive</button>
+    </div>
+
+    <div class="room-grid" id="roomGrid"></div>
+  </div>
+
+  <!-- Floating Action Buttons -->
+  <div class="fab-container" id="fabContainer">
+    <div class="fab-menu">
+      <div class="fab-item whatsapp" onclick="shareWhatsApp()">💬 Send WhatsApp</div>
+      <div class="fab-item" onclick="copyTextSummary()">📋 Copy Summary</div>
+      <div class="fab-item" onclick="downloadCSV()">📊 Export CSV</div>
+      <div class="fab-item" onclick="window.print()">📄 Save PDF</div>
+    </div>
+    <button class="fab-main" onclick="toggleFab()">⚡</button>
+  </div>
+
+  <!-- Room Editor Bottom Sheet -->
+  <div class="modal-overlay" id="roomModal">
+    <div class="modal">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title" id="modalRoomTitle">Room --</div>
+        <button class="close-btn" onclick="closeRoomModal()">✕</button>
+      </div>
+
+      <div class="field-group">
+        <label>Service IN Time</label>
+        <div class="input-row">
+          <input type="time" id="inTime" onchange="autoSaveModalState()" />
+          <button class="btn-clear-input" onclick="clearTimeField('inTime')" title="Clear IN time">✕</button>
+          <button class="btn btn-primary" onclick="setCurrentTime('inTime')">Now</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Service OUT Time</label>
+        <div class="input-row">
+          <input type="time" id="outTime" onchange="autoSaveModalState()" />
+          <button class="btn-clear-input" onclick="clearTimeField('outTime')" title="Clear OUT time">✕</button>
+          <button class="btn btn-primary" onclick="setCurrentTime('outTime')">Now</button>
+        </div>
+        <div class="quick-time-btns">
+          <button class="btn-time-adjust" onclick="addMinutesToOut(5)">+5m</button>
+          <button class="btn-time-adjust" onclick="addMinutesToOut(15)">+15m</button>
+          <button class="btn-time-adjust" onclick="addMinutesToOut(30)">+30m</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Quick Presets</label>
+        <div class="chips" id="presetChipsContainer"></div>
+      </div>
+
+      <div class="field-group">
+        <label>Notes / Remarks</label>
+        <input type="text" id="roomNote" placeholder="e.g. Guest requested extra towels..." oninput="autoSaveModalState(); renderPresets();" />
+      </div>
+
+      <div style="display:flex; justify-content:space-between; margin-top: 8px;">
+        <button class="btn btn-danger-outline" onclick="clearRoomData()">Clear All</button>
+        <button class="btn btn-primary" style="padding: 12px 24px; font-size:0.9rem;" onclick="saveRoomData()">Save Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Settings</div>
+        <button class="close-btn" onclick="closeModal('settingsModal')">✕</button>
+      </div>
+
+      <div class="field-group">
+        <label>Rooms Manager</label>
+        <div class="input-row">
+          <input type="text" id="newRoomInput" placeholder="Add Room (e.g. 101)" />
+          <button class="btn btn-primary" onclick="addRoom()">Add</button>
+        </div>
+        <div class="manage-list" id="roomsManageList"></div>
+      </div>
+
+      <hr style="border-color: var(--card-border);" />
+
+      <div class="field-group">
+        <label>Suggestion Presets</label>
+        <div class="input-row">
+          <input type="text" id="newPresetInput" placeholder="Add Chip (e.g. Refused)" />
+          <button class="btn btn-primary" onclick="addPreset()">Add</button>
+        </div>
+        <div class="manage-list" id="presetsManageList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Logs Modal -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal" style="max-width: 780px;">
+      <div class="sheet-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title">📜 Shift History Logs</div>
+        <button class="close-btn" onclick="closeModal('historyModal')">✕</button>
+      </div>
+
+      <div class="history-stats">
+        <div class="stat-box">
+          <div class="stat-val" id="statDays">0</div>
+          <div class="stat-lbl">Days Saved</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statCleaned">0</div>
+          <div class="stat-lbl">Rooms Cleaned</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statFlagged" style="color:#fbbf24;">0</div>
+          <div class="stat-lbl">Flags / Notes</div>
+        </div>
+      </div>
+
+      <div class="history-filters">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input type="text" id="histSearchInput" placeholder="🔍 Search Room or Note..." style="flex:2; min-width:160px;" oninput="filterHistory()" />
+          <input type="date" id="histDateFilter" style="flex:1; min-width:130px;" onchange="filterHistory()" />
+          <button class="btn" onclick="resetHistoryFilters()">Reset</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label style="font-size:0.75rem; color:var(--text-sub);">View Mode:</label>
+          <div style="display:flex; gap:6px;">
+            <button class="btn" id="btnViewCards" style="padding:6px 12px;" onclick="setHistoryView('cards')">🎴 Cards</button>
+            <button class="btn" id="btnViewTable" style="padding:6px 12px;" onclick="setHistoryView('table')">📊 Table</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="historyRenderContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+      <div class="pagination">
+        <button class="btn" id="btnPrevPage" onclick="changeHistoryPage(-1)">← Prev</button>
+        <span id="pageIndicator" style="font-size:0.8rem; font-weight:700; color:var(--text-sub);">Page 1 of 1</span>
+        <button class="btn" id="btnNextPage" onclick="changeHistoryPage(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Empty room list initialized
+    let roomsList = [];
+    let presetsList = ['🚫 DND', '❌ Refused', '✅ Cleaned', '🛠️ Maintenance'];
+    
+    let roomsData = {};
+    let historyLogs = {};
+    let activeRoomId = null;
+
+    let historyViewMode = 'cards';
+    let historyFilteredDates = [];
+    let historyCurrentPage = 1;
+    const historyItemsPerPage = 5;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('currentDate').innerText = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      loadStorage();
+      renderGrid();
+      restoreActiveModalState();
+    });
+
+    function loadStorage() {
+      const savedRooms = localStorage.getItem('rsp_rooms_list');
+      if (savedRooms !== null) {
+        roomsList = JSON.parse(savedRooms);
+      } else {
+        roomsList = [];
+      }
+
+      const savedPresets = localStorage.getItem('rsp_presets_list');
+      if (savedPresets) presetsList = JSON.parse(savedPresets);
+
+      const savedLogs = localStorage.getItem('rsp_current_logs');
+      if (savedLogs) {
+        roomsData = JSON.parse(savedLogs);
+      } else {
+        initEmptyData();
+      }
+
+      const savedHistory = localStorage.getItem('rsp_history_logs');
+      if (savedHistory) historyLogs = JSON.parse(savedHistory);
+    }
+
+    function initEmptyData() {
+      roomsData = {};
+      roomsList.forEach(r => roomsData[r] = { in: '', out: '', note: '' });
+    }
+
+    function persist() {
+      localStorage.setItem('rsp_rooms_list', JSON.stringify(roomsList));
+      localStorage.setItem('rsp_presets_list', JSON.stringify(presetsList));
+      localStorage.setItem('rsp_current_logs', JSON.stringify(roomsData));
+      localStorage.setItem('rsp_history_logs', JSON.stringify(historyLogs));
+    }
+
+    function autoSaveModalState() {
+      if (!activeRoomId) return;
+      const modalState = {
+        roomId: activeRoomId,
+        in: document.getElementById('inTime').value,
+        out: document.getElementById('outTime').value,
+        note: document.getElementById('roomNote').value
+      };
+      localStorage.setItem('rsp_active_modal', JSON.stringify(modalState));
+    }
+
+    function restoreActiveModalState() {
+      const savedModal = localStorage.getItem('rsp_active_modal');
+      if (savedModal) {
+        const modalState = JSON.parse(savedModal);
+        if (modalState && modalState.roomId && roomsList.includes(modalState.roomId)) {
+          activeRoomId = modalState.roomId;
+          document.getElementById('modalRoomTitle').innerText = `Room ${activeRoomId}`;
+          document.getElementById('inTime').value = modalState.in || '';
+          document.getElementById('outTime').value = modalState.out || '';
+          document.getElementById('roomNote').value = modalState.note || '';
+          renderPresets();
+          openModal('roomModal');
+        } else {
+          clearActiveModalState();
+        }
+      }
+    }
+
+    function clearActiveModalState() {
+      localStorage.removeItem('rsp_active_modal');
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('roomGrid');
+      grid.innerHTML = '';
+
+      if (roomsList.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <p>No rooms added yet!</p>
+            <button class="btn btn-primary" onclick="openSettingsModal()">➕ Add Rooms in Settings</button>
+          </div>
+        `;
+        return;
+      }
+
+      roomsList.forEach(roomNum => {
+        if (!roomsData[roomNum]) roomsData[roomNum] = { in: '', out: '', note: '' };
+        const data = roomsData[roomNum];
+        
+        let statusClass = '';
+        let badge = '<span class="badge">Pending</span>';
+
+        if (data.note.toLowerCase().includes('dnd') || data.note.toLowerCase().includes('refused')) {
+          statusClass = 'status-flagged';
+          badge = '<span class="badge badge-flag">Flagged</span>';
+        } else if (data.in && data.out) {
+          statusClass = 'status-done';
+          badge = '<span class="badge badge-done">Done</span>';
+        } else if (data.in) {
+          statusClass = 'status-active';
+          badge = '<span class="badge badge-in">In Progress</span>';
+        }
+
+        const card = document.createElement('div');
+        card.className = `room-card ${statusClass}`;
+        card.onclick = () => openRoomModal(roomNum);
+        card.innerHTML = `
+          <div class="room-header">
+            <span class="room-num">Room ${roomNum}</span>
+            ${badge}
+          </div>
+          <div class="time-info">
+            <span><span>IN</span> <strong>${data.in || '--:--'}</strong></span>
+            <span><span>OUT</span> <strong>${data.out || '--:--'}</strong></span>
+          </div>
+          ${data.note ? `<div class="note-preview">${data.note}</div>` : ''}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderPresets() {
+      const container = document.getElementById('presetChipsContainer');
+      container.innerHTML = '';
+      const noteInput = document.getElementById('roomNote');
+      const currentNote = noteInput ? noteInput.value : '';
+
+      presetsList.forEach(p => {
+        const isSelected = currentNote === p;
+        const chip = document.createElement('span');
+        chip.className = `chip ${isSelected ? 'selected' : ''}`;
+        chip.innerText = p;
+        chip.onclick = () => {
+          if (isSelected) {
+            noteInput.value = '';
+          } else {
+            noteInput.value = p;
+          }
+          autoSaveModalState();
+          renderPresets();
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    function openRoomModal(roomNum) {
+      activeRoomId = roomNum;
+      document.getElementById('modalRoomTitle').innerText = `Room ${roomNum}`;
+      document.getElementById('inTime').value = roomsData[roomNum].in || '';
+      document.getElementById('outTime').value = roomsData[roomNum].out || '';
+      document.getElementById('roomNote').value = roomsData[roomNum].note || '';
+      autoSaveModalState();
+      renderPresets();
+      openModal('roomModal');
+    }
+
+    function closeRoomModal() {
+      clearActiveModalState();
+      closeModal('roomModal');
+    }
+
+    function setCurrentTime(fieldId) {
+      const now = new Date();
+      document.getElementById(fieldId).value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      autoSaveModalState();
+    }
+
+    function clearTimeField(fieldId) {
+      document.getElementById(fieldId).value = '';
+      autoSaveModalState();
+    }
+
+    function addMinutesToOut(mins) {
+      const inVal = document.getElementById('inTime').value;
+      const baseDate = inVal ? new Date(`2026-01-01T${inVal}:00`) : new Date();
+      baseDate.setMinutes(baseDate.getMinutes() + mins);
+      document.getElementById('outTime').value = `${String(baseDate.getHours()).padStart(2, '0')}:${String(baseDate.getMinutes()).padStart(2, '0')}`;
+      autoSaveModalState();
+    }
+
+    function saveRoomData() {
+      if (!activeRoomId) return;
+      roomsData[activeRoomId] = {
+        in: document.getElementById('inTime').value,
+        out: document.getElementById('outTime').value,
+        note: document.getElementById('roomNote').value
+      };
+      persist();
+      clearActiveModalState();
+      renderGrid();
+      closeModal('roomModal');
+    }
+
+    function clearRoomData() {
+      if (!activeRoomId) return;
+      roomsData[activeRoomId] = { in: '', out: '', note: '' };
+      document.getElementById('inTime').value = '';
+      document.getElementById('outTime').value = '';
+      document.getElementById('roomNote').value = '';
+      renderPresets();
+      persist();
+      clearActiveModalState();
+      renderGrid();
+    }
+
+    function toggleFab() { document.getElementById('fabContainer').classList.toggle('active'); }
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    function openSettingsModal() { renderSettingsLists(); openModal('settingsModal'); }
+
+    function renderSettingsLists() {
+      const roomsContainer = document.getElementById('roomsManageList');
+      roomsContainer.innerHTML = '';
+
+      if (roomsList.length === 0) {
+        roomsContainer.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted); padding:6px 0;">No rooms added yet.</div>';
+      } else {
+        roomsList.forEach((r, idx) => {
+          roomsContainer.innerHTML += `
+            <div class="manage-item">
+              <span>Room ${r}</span>
+              <div style="display:flex; gap:4px;">
+                <button class="btn" onclick="editRoom(${idx})">✏️</button>
+                <button class="btn btn-danger-outline" onclick="deleteRoom(${idx})">🗑️</button>
+              </div>
+            </div>`;
+        });
+      }
+
+      const presetsContainer = document.getElementById('presetsManageList');
+      presetsContainer.innerHTML = '';
+      presetsList.forEach((p, idx) => {
+        presetsContainer.innerHTML += `
+          <div class="manage-item">
+            <span>${p}</span>
+            <div style="display:flex; gap:4px;">
+              <button class="btn" onclick="editPreset(${idx})">✏️</button>
+              <button class="btn btn-danger-outline" onclick="deletePreset(${idx})">🗑️</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    function addRoom() {
+      const input = document.getElementById('newRoomInput');
+      const val = input.value.trim();
+      if (val && !roomsList.includes(val)) {
+        roomsList.push(val);
+        roomsData[val] = { in: '', out: '', note: '' };
+        input.value = '';
+        persist();
+        renderSettingsLists();
+        renderGrid();
+      }
+    }
+
+    function editRoom(idx) {
+      const newVal = prompt("Edit Room Number:", roomsList[idx]);
+      if (newVal && newVal.trim() !== "") {
+        const oldKey = roomsList[idx];
+        roomsList[idx] = newVal.trim();
+        roomsData[newVal.trim()] = roomsData[oldKey] || { in: '', out: '', note: '' };
+        delete roomsData[oldKey];
+        persist();
+        renderSettingsLists();
+        renderGrid();
+      }
+    }
+
+    function deleteRoom(idx) {
+      if (confirm(`Delete Room ${roomsList[idx]}?`)) {
+        delete roomsData[roomsList[idx]];
+        roomsList.splice(idx, 1);
+        persist();
+        renderSettingsLists();
+        renderGrid();
+      }
+    }
+
+    function addPreset() {
+      const input = document.getElementById('newPresetInput');
+      const val = input.value.trim();
+      if (val && !presetsList.includes(val)) {
+        presetsList.push(val);
+        input.value = '';
+        persist();
+        renderSettingsLists();
+        renderPresets();
+      }
+    }
+
+    function editPreset(idx) {
+      const newVal = prompt("Edit Preset:", presetsList[idx]);
+      if (newVal && newVal.trim() !== "") {
+        presetsList[idx] = newVal.trim();
+        persist();
+        renderSettingsLists();
+        renderPresets();
+      }
+    }
+
+    function deletePreset(idx) {
+      presetsList.splice(idx, 1);
+      persist();
+      renderSettingsLists();
+      renderPresets();
+    }
+
+    function finishAndArchiveDay() {
+      if (confirm("Finish today's shift and archive entries to History?")) {
+        const dateKey = new Date().toISOString().slice(0, 10);
+        historyLogs[dateKey] = JSON.parse(JSON.stringify(roomsData));
+        initEmptyData();
+        clearActiveModalState();
+        persist();
+        renderGrid();
+        alert(`Shift archived successfully for ${dateKey}!`);
+      }
+    }
+
+    function openHistoryModal() {
+      updateHistoryStats();
+      filterHistory();
+      openModal('historyModal');
+    }
+
+    function updateHistoryStats() {
+      const dates = Object.keys(historyLogs);
+      let totalCleaned = 0;
+      let totalFlagged = 0;
+
+      dates.forEach(d => {
+        Object.values(historyLogs[d]).forEach(r => {
+          if (r.in && r.out) totalCleaned++;
+          if (r.note) totalFlagged++;
+        });
+      });
+
+      document.getElementById('statDays').innerText = dates.length;
+      document.getElementById('statCleaned').innerText = totalCleaned;
+      document.getElementById('statFlagged').innerText = totalFlagged;
+    }
+
+    function filterHistory() {
+      const query = document.getElementById('histSearchInput').value.toLowerCase().trim();
+      const dateVal = document.getElementById('histDateFilter').value;
+      const allDates = Object.keys(historyLogs).sort().reverse();
+
+      historyFilteredDates = allDates.filter(d => {
+        if (dateVal && d !== dateVal) return false;
+        if (!query) return true;
+
+        const dayData = historyLogs[d];
+        return Object.keys(dayData).some(roomNum => {
+          const item = dayData[roomNum];
+          return roomNum.toLowerCase().includes(query) || (item.note && item.note.toLowerCase().includes(query));
+        });
+      });
+
+      historyCurrentPage = 1;
+      renderHistoryPage();
+    }
+
+    function resetHistoryFilters() {
+      document.getElementById('histSearchInput').value = '';
+      document.getElementById('histDateFilter').value = '';
+      filterHistory();
+    }
+
+    function setHistoryView(mode) {
+      historyViewMode = mode;
+      document.getElementById('btnViewCards').style.background = mode === 'cards' ? 'var(--primary)' : 'var(--card-bg)';
+      document.getElementById('btnViewTable').style.background = mode === 'table' ? 'var(--primary)' : 'var(--card-bg)';
+      renderHistoryPage();
+    }
+
+    function changeHistoryPage(delta) {
+      const maxPages = Math.ceil(historyFilteredDates.length / historyItemsPerPage) || 1;
+      historyCurrentPage = Math.min(Math.max(1, historyCurrentPage + delta), maxPages);
+      renderHistoryPage();
+    }
+
+    function renderHistoryPage() {
+      const container = document.getElementById('historyRenderContainer');
+      container.innerHTML = '';
+
+      const totalItems = historyFilteredDates.length;
+      const maxPages = Math.ceil(totalItems / historyItemsPerPage) || 1;
+      document.getElementById('pageIndicator').innerText = `Page ${historyCurrentPage} of ${maxPages}`;
+
+      document.getElementById('btnPrevPage').disabled = historyCurrentPage === 1;
+      document.getElementById('btnNextPage').disabled = historyCurrentPage === maxPages;
+
+      if (totalItems === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:20px;">No history entries match your search.</div>';
+        return;
+      }
+
+      const startIndex = (historyCurrentPage - 1) * historyItemsPerPage;
+      const pageDates = historyFilteredDates.slice(startIndex, startIndex + historyItemsPerPage);
+
+      pageDates.forEach(dateKey => {
+        const dayData = historyLogs[dateKey];
+        const roomKeys = Object.keys(dayData);
+
+        if (historyViewMode === 'cards') {
+          let roomItemsHtml = '';
+          roomKeys.forEach(r => {
+            const rd = dayData[r];
+            if (rd.in || rd.out || rd.note) {
+              roomItemsHtml += `
+                <div style="background:rgba(0,0,0,0.3); border:1px solid var(--card-border); border-radius:8px; padding:6px 8px; font-size:0.75rem;">
+                  <div style="font-weight:700; color:#fff;">Room ${r}</div>
+                  <div style="color:var(--text-sub);">IN: ${rd.in || '--'} | OUT: ${rd.out || '--'}</div>
+                  ${rd.note ? `<div style="color:#fbbf24; font-size:0.7rem; margin-top:2px;">${rd.note}</div>` : ''}
+                </div>`;
+            }
+          });
+
+          container.innerHTML += `
+            <div class="history-card-item">
+              <div class="history-card-header">
+                <div>
+                  <strong style="color:#fff; font-size:1rem;">📅 ${dateKey}</strong>
+                  <div style="font-size:0.75rem; color:var(--text-sub);">${roomKeys.length} Rooms Tracked</div>
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-primary" style="padding:6px 10px; font-size:0.75rem;" onclick="exportHistoryCSV('${dateKey}')">📊 CSV</button>
+                  <button class="btn btn-danger-outline" style="padding:6px 10px; font-size:0.75rem;" onclick="deleteHistoryDate('${dateKey}')">🗑️</button>
+                </div>
+              </div>
+              <div class="history-card-body">${roomItemsHtml || '<div style="font-size:0.75rem; color:var(--text-muted);">No detailed activity logged.</div>'}</div>
+            </div>`;
+        } else {
+          let tableRows = '';
+          roomKeys.forEach(r => {
+            const rd = dayData[r];
+            if (rd.in || rd.out || rd.note) {
+              tableRows += `
+                <tr>
+                  <td><strong>Room ${r}</strong></td>
+                  <td>${rd.in || '--:--'}</td>
+                  <td>${rd.out || '--:--'}</td>
+                  <td style="color:#fbbf24;">${rd.note || '-'}</td>
+                </tr>`;
+            }
+          });
+
+          container.innerHTML += `
+            <div class="history-card-item">
+              <div class="history-card-header">
+                <strong style="color:#fff;">📅 ${dateKey}</strong>
+                <div style="display:flex; gap:6px;">
+                  <button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem;" onclick="exportHistoryCSV('${dateKey}')">📊 CSV</button>
+                  <button class="btn btn-danger-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="deleteHistoryDate('${dateKey}')">🗑️</button>
+                </div>
+              </div>
+              <table class="history-table">
+                <thead><tr><th>Room</th><th>IN</th><th>OUT</th><th>Notes</th></tr></thead>
+                <tbody>${tableRows || '<tr><td colspan="4" style="color:var(--text-muted);">No entries</td></tr>'}</tbody>
+              </table>
+            </div>`;
+        }
+      });
+    }
+
+    function deleteHistoryDate(dateKey) {
+      if (confirm(`Delete history for ${dateKey}?`)) {
+        delete historyLogs[dateKey];
+        persist();
+        updateHistoryStats();
+        filterHistory();
+      }
+    }
+
+    function exportHistoryCSV(dateKey) {
+      const data = historyLogs[dateKey];
+      let csv = `Room Number,IN Time,OUT Time,Notes\n`;
+      Object.keys(data).forEach(r => {
+        csv += `"${r}","${data[r].in}","${data[r].out}","${(data[r].note || '').replace(/"/g, '""')}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `Room_Service_Log_${dateKey}.csv`);
+      a.click();
+    }
+
+    function generateTextReport() {
+      let text = `🏨 *Room Service Report - ${new Date().toLocaleDateString()}*\n\n`;
+      roomsList.forEach(r => {
+        const d = roomsData[r] || { in:'', out:'', note:'' };
+        text += `• *Room ${r}*: IN ${d.in || '--:--'} | OUT ${d.out || '--:--'} ${d.note ? `[${d.note}]` : ''}\n`;
+      });
+      return text;
+    }
+
+    function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(generateTextReport())}`, '_blank'); }
+    function copyTextSummary() { navigator.clipboard.writeText(generateTextReport()).then(() => alert('Daily room log copied!')); }
+
+    function downloadCSV() {
+      let csv = 'Room Number,IN Time,OUT Time,Notes\n';
+      roomsList.forEach(r => {
+        const d = roomsData[r] || { in:'', out:'', note:'' };
+        csv += `"${r}","${d.in}","${d.out}","${d.note.replace(/"/g, '""')}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `Room_Service_Log_${new Date().toISOString().slice(0,10)}.csv`);
+      a.click();
+    }
+  </script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('./sw.js').then(function(registration) {
+          console.log('ServiceWorker registered successfully with scope: ', registration.scope);
+        }, function(err) {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
